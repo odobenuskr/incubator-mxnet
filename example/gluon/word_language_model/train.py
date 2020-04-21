@@ -175,6 +175,10 @@ def train():
         total_L = 0.0
         start_time = time.time()
         hidden = model.begin_state(func=mx.nd.zeros, batch_size=args.batch_size, ctx=context)
+        
+        # add time checkpoint for logging
+        before_time = start_time
+        
         for i, (data, target) in enumerate(train_data):
             data = data.as_in_context(context).T
             target = target.as_in_context(context).T.reshape((-1, 1))
@@ -193,9 +197,14 @@ def train():
             total_L += mx.nd.sum(L).asscalar()
 
             if i % args.log_interval == 0 and i > 0:
+                
+                # log interval latency print
+                batch_latency = time.time() - before_time
+                before_time = time.time()
+                
                 cur_L = total_L / args.log_interval
-                print('[Epoch %d Batch %d] loss %.2f, ppl %.2f'%(
-                    epoch, i, cur_L, math.exp(cur_L)))
+                print('[Epoch %d Batch %d] loss %.2f, ppl %.2f, batch_latency %.4f'%(
+                    epoch, i, cur_L, math.exp(cur_L), batch_latency))
                 total_L = 0.0
 
             if args.export_model:
